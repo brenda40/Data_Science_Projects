@@ -1,0 +1,91 @@
+---
+  title: "Project #1-Bid ANOVA"
+author: "Brenda Woodard"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  pdf_document: default
+html_document:
+  df_print: paged
+---
+
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+library(ggpubr)
+
+``` 
+
+```{r}
+# Bid ANOVA
+# 1  Part # 1
+
+load(file="dat1.RData")
+
+data<-dat1
+
+platform<- data$platform
+bid<- data$bid
+
+sample<-data.frame(data)
+qplot(sample$bid,
+      geom="histogram", binwidth = .8, xlab = "Samples", fill=I("plum2"), col=I("darkcyan")) 
+
+qqnorm(sample$bid, main = "Normal Q-Q Plot", col = I("turquoise4"))
+
+ggplot(data=data, aes(x=platform,y=bid, col="red"))+
+  layer(geom = "point", stat = "identity", position = "identity",data=data.frame(bid))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+t.test(sample$bid,mu=0, conf.level = .99)
+var.test(sample$bid,sample$platform)
+model<-lm(sample$bid ~ sample$platform, data)
+summary(model)
+
+```
+```{r}
+ # Discuss
+ # visual assessment suggests that the means are evenly distributed.
+ # The low p-value in the tests shows that the hypothesis is correct that the means are eveny distributed.
+
+
+```
+
+
+
+
+```{r}
+# 1 Part # 2 
+
+ggplot(data=data,aes(x=data$platform,y=data$bid))+geom_boxplot()+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+model<-aov(data$bid~data$platform,data=data)
+model
+summary(model)
+summary.aov(model)
+
+plot(model)
+TukeyHSD(model)
+```
+```{r}
+# Interpret
+# Further testing confirms our previous analysis that the bid amounts are drawn from populations with equal means.
+
+```
+
+
+
+
+```{r}
+# 1 Part # 3
+
+summary_data = data %>% 
+  group_by(platform) %>% 
+  summarise(m_bid = mean(bid))
+
+ggplot(summary_data, aes(platform,m_bid)) + geom_col() + geom_errorbar(aes(ymin = m_bid - (0.05 * m_bid), ymax = m_bid + (0.05 * m_bid)), width=0.2)
+
+
+```
+
