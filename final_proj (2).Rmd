@@ -1,0 +1,131 @@
+---
+  title: "Final Project"
+author: "Brenda Woodard, Bryan Pham"
+date: '`r format(Sys.time(),"%B %d, %Y")`'
+output:
+  pdf_document: default
+html_document:
+  df_print: paged
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(knitr)
+library(ggpubr)
+library(ggplot2)
+library(popbio)
+```
+
+
+```{r}
+dat <- read.csv("catan_stats.csv")
+cdat <- dat[,c(1:4,28:31)]
+cdat$me[is.na(cdat$me)] <- 0
+colnames(cdat)[c(1, 6, 7, 8)] <- c("game_num", "trade", "robber", "total")
+# cleaning the data
+```
+
+
+```{r}
+winning_p <- vector()
+for (i in 1:nrow(cdat)) {
+  if(cdat$points[i] >= 10) {
+    winning_p <- append(winning_p, cdat$player[i])
+  }
+}
+winning_p
+
+table(winning_p)
+hist(winning_p, ylim = c(0,20), breaks = seq(0.5, 4.5, 1),
+     main = 'Frequency of Wins per Player Position', xlab = 'Player Position', col=("gray77"))
+```
+
+
+```{r}
+w_l <- vector()
+for (i in 1:nrow(cdat)) {
+  if(cdat$points[i] >= 10) {
+    w_l <- append(w_l, 1)
+  } else {w_l <- append(w_l, 0)}  
+}
+
+cdat['w_l'] <- w_l
+
+l1 <- glm(cdat$w_l ~ cdat$production, binomial)
+l2 <- glm(cdat$w_l ~ cdat$robber, binomial)
+l3 <- glm(cdat$w_l ~ cdat$trade, binomial)
+l4 <- glm(cdat$w_l ~ cdat$production * cdat$robber, binomial)
+
+m1 <- glm(cdat$w_l ~ cdat$production * cdat$trade * cdat$robber, binomial)
+m2 <- glm(cdat$w_l ~ cdat$production + cdat$trade + cdat$robber, binomial)
+
+a_test <- anova(m1, m2, test = 'Chi')
+a_test
+# This test helped us decide if the simpler model was sufficient enough, 
+# or if we needed to use the more complex model.
+
+summary(l1)
+summary(l2)
+summary(l3)
+summary(l4)
+summary(m1)
+summary(m2)
+
+```
+
+
+```{r}
+means_1<- round(tapply(cdat$production, cdat$w_l, mean))
+means_1
+scatter.smooth(cdat$w_l ~ cdat$production, col="blue")
+logi.hist.plot(cdat$production,cdat$w_l,boxp=FALSE,type="hist",col="gray")
+boxplot(cdat$production ~ cdat$w_l, xlab="wins", ylab="production", col=rainbow(2))
+points(means_1, col="black", pch=18) 
+
+means_2<- round(tapply(cdat$robber, cdat$w_l, mean))
+means_2
+plot(cdat$w_l~cdat$robber, col="red")
+logi.hist.plot(cdat$robber,cdat$w_l,boxp=FALSE,type="hist",col="gray")
+boxplot(cdat$robber ~ cdat$w_l, xlab="wins", ylab="robber", col=rainbow(5))
+points(means_2, col="black", pch=18)
+
+means_3<- round(tapply(cdat$trade, cdat$w_l, mean))
+means_3
+scatter.smooth(cdat$w_l ~ cdat$trade, col="green")
+logi.hist.plot(cdat$trade,cdat$w_l,boxp=FALSE,type="hist",col="gray")
+boxplot(cdat$trade ~ cdat$w_l, xlab="wins", ylab="trade", col=rainbow(7))
+points(means_3, col="black", pch=18)
+
+```
+
+
+
+
+
+```{r}
+ll_null <- m1$null.deviance/-2
+ll_proposed <- m1$deviance/-2
+pseudo_rsqr <- (ll_null - ll_proposed)/ll_null
+pseudo_rsqr
+pseudo_p <- 1 - pchisq(2*(ll_proposed - ll_null), df = (length(m1$coefficients) -1))
+pseudo_p
+```
+
+
+```{r}
+
+predict_dat <- data.frame(prob_w_l = m1$fitted.values, w_l = cdat$w_l)
+predict_dat <- predict_dat[order(predict_dat$prob_w_l, decreasing = FALSE),]
+predict_dat$rank <- 1:nrow(predict_dat)
+
+ggplot(data = predict_dat, aes(x = rank, y = prob_w_l)) +
+  geom_point(aes(color = w_l), alpha = 1, shape = 4, stroke = 2) +
+  xlab('Index') + ylab('Predicted Probability of Winning')
+```
+
+
+
+
+
+
