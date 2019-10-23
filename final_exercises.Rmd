@@ -1,0 +1,156 @@
+---
+title: "Final Exercises"
+author: "C. Durso, Brenda Woodard"
+date: "February 6, 2019"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggpubr)
+```
+
+## Instructions
+
+Please work these problems on your own. You may use web searches, but not interactive methods such as asking others online or in person.
+
+Please complete the questions on this template and upload your solutions in a single knitted Word or pdf document. Please also upload your completed template.
+
+In light of the exam context, the data sets for the questions have been generated clearly to satisfy or obviously to violate the requirements of the statistical procedures. If reasonable exploratory analysis is done, there should be little ambiguity as to whether the given data satisfy the requirements. This is unrealistic, but less stressful for students and graders alike.
+
+## Questions
+
+1. Student's t, one sample 
+
+```{r}
+load("dat_one_sample.RData")
+```
+
+  1.a. Please make a histogram of dat_one_sample with informative bin widths. (2 points)
+```{r}
+sample<-data.frame(dat_one_sample)
+qplot(sample$dat_one_sample,
+      geom="histogram", binwidth = .3, xlab = "Samples", fill=I("plum2"), col=I("darkcyan")) 
+``` 
+   
+  1.b. Please generate a Normal qq plot for dat_one_sample.(2 points)
+  
+```{r}
+qqnorm(sample$dat_one_sample, main = "Normal Q-Q Plot", col = I("turquoise4"))
+```
+
+ 1.c. Please perform a Student's t-test of the null hypothesis that dat_one_sample is drawn from a Normal population with mean equal to 1. Report the 99% confidence interval for the mean. Please do this whether or not your work in 1.a and 1.b indicates that the hypotheses making the one sample Student's test a test of location of the mean are satisfied. (3 points)
+ 
+```{r}
+t.test(sample$dat_one_sample,mu=1, conf.level = .99)
+```
+
+99 percent confidence interval:
+ -0.3220077  3.3046121
+ 
+ 1.d. Considering your work in 1.a and 1.b, how do you interpret the results (p-value and confidence interval) in 1.c? (3 points)
+ 
+ We accept the null hypothesis because the p-value is 0.4612 which is > 0.05. This shows us that it is unlikely that the distribution isn't normal. The hypothesized mean is in the 99% CI because the p-value is higher than 0.01.
+ 
+2. Wilcoxon signed rank
+
+  2.a. Please perform a Wilcoxon signed rank test of the null hypothesis that dat_one_sample is drawn from a population symmetric around its mean with mean equal to 1. (5 points)
+  
+```{r}
+wilcox.test(sample$dat_one_sample, mu=1)
+```
+  
+  2.b. Considering your work in 1.a and 1.b, how do you interpret the results in 2.a? (5 points)
+  
+  According to the p-value from the wilcoxon test we should reject the null hypothesis because the p-value is less than 0.05. This seems to line up with the information from the graphs.It is close to being symmetric around its mean, but not quite.  
+
+3. The data set dat_pre_post simulates pre-intervention measurements for 22 individuals together with their post-intervention measurements. Carry out the most powerful test we have learned of the null hypothesis that the intervention is not associated with any systematic increase or decrease in the measurement. Please justify your choice of test. (Note that to have evidence that any change was caused by the intervention, a controlled experiment would be required.) To help you decide which test to use, please generate a scatter plot of the pre values against the post values. (10 points)
+
+```{r}
+load("dat_pre_post.RData")
+scatter.smooth(dat_pre_post$pre, dat_pre_post$post, main="Pre-Values vs. Post-Values", 
+   xlab="Pre-Values ", ylab="Post-Values ", pch=19, col= "darkcyan")
+t.test(dat_pre_post$pre, dat_pre_post$post)
+```
+
+We want to show that both sets of data have the same variance, so I chose the Welch's Two Sample t.test. This test assumes that the samples have different true variances. We can interpret from the results that we accept the null hypothesis because the p-value > 0.05. This means that the two samples do not have the same variances, so the intervention is associated with a systematic change. 
+
+4. The data dat_two_sample simulate independent, identically distributed samples from a population with the distribution $X$ in the column labeled "x" and independent, identically distributed samples from a population with the distribution $Y$ in the column labeled "y"
+
+```{r}
+load("dat_two_sample.RData")
+```
+
+  4.a.Please visually assess the Normality of the x's and the y's. (5 points)
+
+```{r}
+qqplot(dat_two_sample$x,dat_two_sample$y)
+ggqqplot(data=dat_two_sample,x="x", y="y", col="darkslateblue")
+```
+The x's and y's appear to be distributed normally. 
+
+  4.b. Please display a scatter plot of x versus y. Do these appear to be independent samples as claimed? (5 points)
+  
+```{r}
+plot(dat_two_sample$x, dat_two_sample$y, main="x vs. y", 
+   xlab="x", ylab="y", pch=19, col="purple4") 
+```
+  They do appear to be independent. 
+  
+  4.c. Please carry out an F test of the equality of the variance of x and y.(5 points)
+  
+```{r}
+var.test(dat_two_sample$x,dat_two_sample$y)
+```
+  
+  4.d. Please carry out Welch's test of the null hypothesis that the means of x and y are equal. Please interpret the result using the work in 4.a-4.c. (5 points)
+  
+```{r}
+t.test(dat_two_sample$x,dat_two_sample$y)
+```
+From our results we reject the null hypothesis that the means of x and y are equal because the p-value is less than 0.05.  This is supported by the results of the F test as well.   
+  
+5. Please carry the Mann Whitney U test on x and y. Please interpret the result using the work in 4.a-4.c.(10 points)
+
+```{r}
+wilcox.test(dat_two_sample$x,dat_two_sample$y, paired = FALSE)
+```
+The Mann Whitney U test compares the medians instead of the means. The p-value is less than 0.05 so we reject the null hypothesis that true location shift is equal to 0. 
+
+6. Please carry out a $\chi^2$ test of independence on the contingency table in "mat". Please interpret the results.(10 points)
+
+```{r}
+load("mat.Rdata")
+chisq.test(mat)
+```
+This tests for uniformity. The low p-value suggests that "mat" is not uniform.
+
+
+7. Please carry out Fisher's exact test on "mat" and interpret the results. (10 points)
+
+```{r}
+fisher.test(mat)
+```
+This tests the null of independence of the rows and columns. We accept the null hypothesis because the p-value is greater than 0.05. 
+
+8.a. Please fit a linear regression model giving post as a linear functio of pre from the  dat_pre_post data set. Display the coefficients with their p-values. (5 points)
+
+```{r}
+lmodel<-lm(dat_pre_post$pre ~ dat_pre_post$post, dat_pre_post)
+summary(lmodel)
+```
+
+8.b. Please use your work in question 3 and any additional plots you find informative to address the validity of the model, the coefficients, and the p-values. Please address the linearity of the relation between pre and post, the Normality of the residuals, and the issue of influential observations.(15 points) 
+
+```{r}
+scatter.smooth(dat_pre_post$pre, dat_pre_post$post, main="Pre-Values vs. Post-Values", 
+   xlab="Pre-Values ", ylab="Post-Values ", pch=19, col= "darkcyan")
+t.test(dat_pre_post)
+```
+Linear regression is a valid model because it allows us to measure the joint effect of both variables. The coefficients and p-values show that we accpet the null hypothesis. The linearity of the relation between the pre and post variables shows that together they are an excellent predictor. The normality of the residuals also support this by showing they are not equal to zero which tells us that the model was not overfitted, so it is a good predictor.
+
+
