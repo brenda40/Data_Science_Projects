@@ -1,0 +1,92 @@
+---
+title: "Project #1- MLR"
+author: "Brenda Woodard"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  pdf_document: default
+html_document:
+  df_print: paged
+---
+ 
+
+```{r}
+# Source: https://cran.r-project.org/web/packages/standardize/vignettes/using-standardize.html
+
+# 3
+# Will rescaling a variable by a constant change only the coefficient of the rescaled variable or possibly others as well? Demonstrate with an example.
+
+library(standardize)
+
+dat_1 <- read.csv("forestfires (1).csv")
+summary(dat_1)
+
+
+```
+
+```{r}
+# Example - unscaled
+
+mean(dat_1$area)
+sd(dat_1$area)
+
+
+mean(dat_1$temp)
+sd(dat_1$temp)
+
+mean(dat_1$rain)
+sd(dat_1$rain)
+
+summary(lm(area ~ temp, dat_1))
+summary(lm(area ~ rain, dat_1))
+        
+```
+```{r}
+#  Example - only 1 var scaled
+
+dat_1$area_scaled <- scale(dat_1$area)[, 1]
+
+mean(dat_1$area_scaled)
+sd(dat_1$area_scaled)
+
+summary(lm(area_scaled ~ temp, dat_1))
+summary(lm(area_scaled ~ rain, dat_1))
+```
+
+```{r}
+# Discuss
+
+# Rescaling a variable by a constant will only change the coefficient of the rescaled variable. 
+# The values in the transformed variable have the same relationship to one another as in the untransformed variable, the difference is that the transformed variable has mean 0 and standard deviation 1.
+
+```
+
+
+
+
+
+```{r}
+#  Example - scaled
+
+#  Scaled so that they all have mean 0 and standard deviation 1 
+#  The output becomes easier to interpret:
+
+dat_1$area_scaled <- scale(dat_1$area)[, 1]
+dat_1$temp_scaled <- scale(dat_1$temp)[, 1]
+dat_1$rain_scaled <- scale(dat_1$rain)[, 1]
+
+mean(dat_1$area_scaled)
+sd(dat_1$area_scaled)
+
+
+mean(dat_1$temp_scaled)
+sd(dat_1$temp_scaled)
+
+mean(dat_1$rain_scaled)
+sd(dat_1$rain_scaled)
+
+summary(lm(area_scaled ~ temp_scaled, dat_1))
+summary(lm(area_scaled ~ rain_scaled, dat_1))
+        
+
+```
+

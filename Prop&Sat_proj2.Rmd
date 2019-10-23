@@ -1,0 +1,167 @@
+---
+title: "Project #2- Regression Trees"
+author: "Brenda Woodard"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+pdf_document: default
+html_document:
+df_print: paged
+source: https://www.kaggle.com/adachowicz/house-prices-random-forest-regression-analysis/data
+source: http://uc-r.github.io/regression_trees
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rsample)
+library(dplyr)
+library(rpart)  
+library(rpart.plot) 
+library(ipred)
+library(caret)
+
+```
+
+```{r}
+# Import,clean, and extract data
+dat_tr <- read.csv("housing_train.csv")
+dat_te <- read.csv("housing_test.csv")
+dat_test <- dat_te[,c(5,20,50,52)]
+
+sub_dat <- dat_tr[,c(5,20,50,52,81)]
+head(sub_dat,10)
+```
+
+```{r}
+hist(sub_dat$SalePrice,
+     main = 'Sale Price', xlab = 'Price', col=("gray77"))
+pairs(sub_dat,panel=panel.smooth)
+qqnorm(sub_dat$SalePrice, main = "Normal Q-Q Plot", col = I("turquoise4"))
+
+
+# Visual assessment shows that the data is not normally distributed.
+```
+
+```{r}
+sub_dat$trans <- log(sub_dat$SalePrice)
+
+hist(sub_dat$trans,
+     main = 'Sale Price', xlab = 'Price', col=("gray77"))
+qqnorm(sub_dat$trans, main = "Normal Q-Q Plot", col = I("turquoise4"))
+
+# After taking the log of the Sale Price Column our data is now evenly distributed. 
+```
+```{r}
+# Split the extracted and adjusted data into training and test sets
+set.seed(123)
+train.samp <- sub_dat$trans %>%
+  createDataPartition(p = 0.8, list = FALSE)
+train.dat  <- sub_dat[train.samp, ]
+test.dat <- sub_dat[-train.samp, ]
+
+x <- model.matrix(trans~., train.dat)[,-1]
+y <- train.dat$trans
+```
+
+
+```{r}
+# Do cross-validation analysis to evaluate our model
+mod <- rpart(
+  formula = trans ~ .,
+  data    = sub_dat,
+  method  = "anova"
+  )
+
+mod
+rpart.plot(mod)
+plotcp(mod)
+```
+
+
+
+```{r}
+# Tune the model to attempt to improve performance by 
+# testing more than just the default parameters
+# Test ranges with a hypergrid to access the parameters
+hyper_grid <- expand.grid(
+  minsplit = seq(5, 20, 1),
+  maxdepth = seq(8, 15, 1)
+)
+
+head(hyper_grid)
+# number of combinations
+nrow(hyper_grid)
+
+models <- list()
+for (i in 1:nrow(hyper_grid)) {
+  
+  # minsplit, maxdepth values
+  minsplit <- hyper_grid$minsplit[i]
+  maxdepth <- hyper_grid$maxdepth[i]
+
+  # train model and store
+  models[[i]] <- rpart(
+    formula = trans ~ .,
+    data    = sub_dat,
+    method  = "anova",
+    control = list(minsplit = minsplit, maxdepth = maxdepth)
+    )
+}
+
+optimal_tree <- rpart(
+    formula = trans ~ .,
+    data    = sub_dat,
+    method  = "anova",
+    control = list(minsplit = 11, maxdepth = 8, cp = 0.01)
+    )
+
+optimal_tree
+rpart.plot(optimal_tree)
+plotcp(optimal_tree)
+
+# predictions on test data
+d.test <- model.matrix(trans ~., test.dat)[,-1]
+predictions <- model %>% predict(d.test) %>% as.vector()
+
+pred <- predict(optimal_tree, newdata = test.dat)
+
+data.frame(
+  RMSE(pred = pred, obs = test.dat$trans),
+  Rsquare = R2(predictions, test.dat$trans)
+)
+
+
+# Can conclude that using one regression tree is not a good model due to the low RMSE and the high Rsqaured.
+```
+
+```{r}
+# Use random forest regression (bagging and bootstrapping) to average across many trees which reduces the 
+# variability of one tree and reduces overfitting. This makes predictions more accurate and less biased.
+
+# 10-fold cross validation
+t_ctrl <- trainControl(method = "cv",  number = 10) 
+
+# cv bagged model
+bagged_cv <- train(
+  trans ~ .,
+  data = sub_dat,
+  method = "treebag",
+  trControl = t_ctrl,
+  importance = TRUE
+  )
+
+# analyze results
+bagged_cv
+
+# analyze the important variables
+plot(varImp(bagged_cv), 20)  
+
+
+# new predictions
+pred <- predict(bagged_cv, test.dat)
+data.frame(
+  RMSE(pred, test.dat$trans),
+  Rsquare = R2(predictions, test.dat$trans)
+)
+
+# still not perfect but our margin of error did go down.
+```

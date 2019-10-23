@@ -1,0 +1,99 @@
+---
+title: "Project #1-Biomarker"
+author: "Brenda Woodard"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  pdf_document: default
+html_document:
+  df_print: paged
+---
+
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+library(ggpubr)
+
+``` 
+
+```{r}
+# Biomarker
+# 2  Part # 1
+
+load(file="dat2.RData")
+
+data<-dat2
+
+a<- data$amt
+b<- data$comorb
+b2<- data$treatment
+
+q<-qplot(data$amt,
+      geom="histogram", binwidth = .2, xlab = "Amt", fill=I("plum2"), col=I("darkcyan")) 
+q
+
+p<- ggplot(data=data, aes(x=b2,y=a, col="red"))+
+  geom_point(aes(x=b,y=a, col="green"))+
+  layer(geom = "point", stat = "identity", position = "identity",data=data.frame(b))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p
+
+
+
+data$trans_Y <- log(data$amt)
+a_2<- data$trans_Y
+
+q_2<-qplot(data$trans_Y,
+      geom="histogram", binwidth = .2, xlab = "Amt", fill=I("plum2"), col=I("darkcyan")) 
+q_2
+
+p_2<- ggplot(data=data, aes(x=b2,y=a_2, col="red"))+
+  geom_point(aes(x=b,y=a_2, col="green"))+
+  layer(geom = "point", stat = "identity", position = "identity",data=data.frame(b))+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+p_2
+
+model<-lm(data$trans_Y ~ data$comorb, data)
+model_2<-lm(data$trans_Y~ data$treatment, data)
+summary(model)
+summary(model_2)
+
+
+t.test(a,mu=0, conf.level = .99)
+t.test(a_2,mu=0, conf.level = .99)
+```
+
+
+```{r}
+########### Discuss
+# we see from the tests that the median values of a and a_2 are not the same. 
+# visually we can see that the original amount is more evenly distributed.
+
+```
+
+
+
+```{r}
+# 2 Part # 2
+
+a_test <- aov(data$amt~ data$comorb + data$treatment, test = 'Chi')
+b_test <- aov(data$amt~ data$comorb * data$treatment, test = 'Chi')
+a_test
+b_test
+summary(a_test)
+summary(b_test)
+summary.aov(a_test)
+summary.aov(b_test)
+
+plot(a_test)
+plot(b_test)
+TukeyHSD(a_test)
+TukeyHSD(b_test)
+```
+```{r}
+#  interpret
+# The treatment population is more significant than the comorbidity population, but together they have the most significant effect.
+
+```
+
